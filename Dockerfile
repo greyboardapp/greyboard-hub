@@ -11,7 +11,7 @@ EXPOSE 8080
 
 RUN mkdir /app
 WORKDIR /app
-COPY ./dist/. ./
+COPY --from=build ./dist/. ./
 
 RUN chmod +x ./Greyboard
 CMD ["./Greyboard", "--urls", "http://0.0.0.0:8080"]
