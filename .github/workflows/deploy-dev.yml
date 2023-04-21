@@ -19,6 +19,6 @@ jobs:
           CLIENT_URL: ${{ secrets.DEV_CLIENT_URL }}
 
       - name: Deploy
-        run: fly deploy -a greyboard-hub-dev --remote-only
+        run: flyctl deploy -a greyboard-hub-dev --remote-only
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
