@@ -1,3 +1,4 @@
+using Greyboard.Configuration;
 using Greyboard.Core;
 using Greyboard.Core.Managers;
 using Greyboard.Hubs;
@@ -23,16 +24,7 @@ builder.Services.AddHostedService<HeartBeatService>();
 builder.Services.AddHttpClient();
 builder.Services.AddSignalR();
 
-builder.Services.AddCors(options =>
-{
-    options.AddPolicy(CORS_NAME, policy =>
-    {
-        policy.AllowAnyHeader()
-            .AllowAnyMethod()
-            .WithOrigins("http://localhost:3000")
-            .AllowCredentials();
-    });
-});
+builder.Services.AddCorsConfiguration();
 
 var app = builder.Build();
 

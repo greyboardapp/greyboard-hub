@@ -59,7 +59,11 @@ public class BoardManager : IBoardManager
                 client.DefaultRequestHeaders.Add("Cookie", $"jwtToken={token}");
             }
 
-            var response = await client.GetAsync($"{_appSettings.CLIENT_URL}/api/boards/slug/{slug}");
+            var url = $"{_appSettings.CLIENT_URL}/api/boards/slug/{slug}";
+
+            _logger.LogInformation($"Requesting board data from {url}");
+
+            var response = await client.GetAsync(url);
             response.EnsureSuccessStatusCode();
 
             var data = await response.Content.ReadFromJsonAsync<ApiResponse<Board>>();

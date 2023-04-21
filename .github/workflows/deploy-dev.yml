@@ -23,7 +23,7 @@ jobs:
         with:
           files: "fly.toml"
         env:
-          CLIENT_URL: ${{ secrets.DEV_CLIENT_URL }}
+          CLIENT_URL: ${{ vars.DEV_CLIENT_URL }}
 
       - name: Deploy
         run: flyctl deploy -a greyboard-hub-dev --remote-only

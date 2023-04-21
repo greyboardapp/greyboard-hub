@@ -2,7 +2,7 @@ namespace Greyboard.Core;
 
 public class AppSettings
 {
-    public string CLIENT_URL { get; set; } = "http://localhost:8787";
+    public string CLIENT_URL { get; set; } = "http://localhost:3000";
 
     public AppSettings(IConfiguration configuration)
     {
