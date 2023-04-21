@@ -1,0 +1,24 @@
+name: Deployment
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+
+      - name: Prepare Provisioning
+        uses: cschleiden/replace-tokens@v1
+        with:
+          files: "fly.toml"
+        env:
+          CLIENT_URL: ${{ secrets.DEV_CLIENT_URL }}
+
+      - name: Deploy
+        run: fly deploy -a greyboard-hub-dev --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
