@@ -39,7 +39,7 @@ public class HeartBeatService : IHostedService
         foreach (var board in _boardManager.GetBoards())
         {
             var clients = _clientManager.GetClientsFromBoard(board.Slug);
-            await _hub.Clients.All.HeartBeat(clients.ToList().ToDictionary(client => client.Id, client => new float[] { client.PointerX, client.PointerY }));
+            await _hub.Clients.All.HeartBeat(clients.ToList().ToDictionary(client => client.Id, client => new float[] { client.PointerX, client.PointerY, (float)client.PointerType }));
         }
     }
 }

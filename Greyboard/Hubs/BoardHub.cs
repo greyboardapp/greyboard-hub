@@ -59,8 +59,6 @@ public class BoardHub : Hub<IBoardClient>
     {
         try
         {
-            _logger.LogInformation(user.PointerX.ToString());
-
             var board = _boardManager.GetBoard(slug);
 
             if (board == null)
@@ -77,6 +75,7 @@ public class BoardHub : Hub<IBoardClient>
 
             var client = new Client
             {
+                ConnectionId = Context.ConnectionId,
                 Id = user.Id,
                 Name = user.Name,
                 Avatar = user.Avatar,
@@ -84,6 +83,15 @@ public class BoardHub : Hub<IBoardClient>
                 PointerX = user.PointerX,
                 PointerY = user.PointerY
             };
+
+            var boardClients = _clientManager.GetClientsFromBoard(slug);
+            var clientsWithSameUser = boardClients.Where((client) => client.Id == user.Id);
+            foreach (var c in clientsWithSameUser)
+            {
+                await Clients.Client(c.ConnectionId).ReassignUserToClient();
+                await Clients.Group(client.Group).ClientDisconnected(c);
+                _clientManager.RemoveClient(c.ConnectionId);
+            }
 
             await Groups.AddToGroupAsync(Context.ConnectionId, slug);
             _clientManager.AddClient(Context.ConnectionId, client);
@@ -101,7 +109,7 @@ public class BoardHub : Hub<IBoardClient>
         }
     }
 
-    public void SetPointerPosition(float pointerX, float pointerY)
+    public void SetPointerPosition(float pointerX, float pointerY, PointerType type)
     {
         try
         {
@@ -109,6 +117,7 @@ public class BoardHub : Hub<IBoardClient>
             {
                 client.PointerX = pointerX;
                 client.PointerY = pointerY;
+                client.PointerType = type;
             }
         }
         catch (Exception e)
@@ -158,6 +167,27 @@ public class BoardHub : Hub<IBoardClient>
         }
     }
 
+    public async void CloseBoard()
+    {
+        try
+        {
+            if (_clientManager.AsClient(Context.ConnectionId, out Client client))
+            {
+                var board = _boardManager.GetBoard(client.Group);
+                if (board != null)
+                {
+                    _logger.LogInformation($"Board closed ({board.Slug})");
+                    await Clients.GroupExcept(board.Slug, Context.ConnectionId).BoardClosed();
+                    _boardManager.RemoveBoard(board.Slug);
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Failed to clear board actions");
+        }
+    }
+
     public void BoardSaved()
     {
         try
@@ -168,6 +198,26 @@ public class BoardHub : Hub<IBoardClient>
                 if (board != null)
                 {
                     board.Events.Clear();
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Failed to clear board actions");
+        }
+    }
+
+    public async void SetBoardName(string name)
+    {
+        try
+        {
+            if (_clientManager.AsClient(Context.ConnectionId, out Client client))
+            {
+                var board = _boardManager.GetBoard(client.Group);
+                if (board != null)
+                {
+                    board.Name = name;
+                    await Clients.Group(client.Group).BoardNameChanged(name);
                 }
             }
         }
