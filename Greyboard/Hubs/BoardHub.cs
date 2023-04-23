@@ -55,10 +55,12 @@ public class BoardHub : Hub<IBoardClient>
         return base.OnDisconnectedAsync(exception);
     }
 
-    public async Task Join(User user, string slug)
+    public async Task Join(Client user, string slug)
     {
         try
         {
+            _logger.LogInformation(user.PointerX.ToString());
+
             var board = _boardManager.GetBoard(slug);
 
             if (board == null)
@@ -79,12 +81,14 @@ public class BoardHub : Hub<IBoardClient>
                 Name = user.Name,
                 Avatar = user.Avatar,
                 Group = slug,
+                PointerX = user.PointerX,
+                PointerY = user.PointerY
             };
 
             await Groups.AddToGroupAsync(Context.ConnectionId, slug);
             _clientManager.AddClient(Context.ConnectionId, client);
 
-            await Clients.Client(Context.ConnectionId).ConnectionReady(_clientManager.GetClientsFromBoard(slug), board.Actions);
+            await Clients.Client(Context.ConnectionId).ConnectionReady(_clientManager.GetClientsFromBoard(slug), board.Events);
 
             await Clients.GroupExcept(slug, Context.ConnectionId).ClientConnected(client);
 
@@ -129,24 +133,29 @@ public class BoardHub : Hub<IBoardClient>
         }
     }
 
-    public async Task AddItems(object data)
+    public async Task BoardActionPerformed(object action)
     {
-        await AddBoardAction(BoardAction.ActionType.Add, data);
-    }
-
-    public async Task RemoveItems(object data)
-    {
-        await AddBoardAction(BoardAction.ActionType.Remove, data);
-    }
-
-    public async Task MoveItems(object data)
-    {
-        await AddBoardAction(BoardAction.ActionType.Move, data);
-    }
-
-    public async Task ResizeItems(object data)
-    {
-        await AddBoardAction(BoardAction.ActionType.Scale, data);
+        try
+        {
+            if (_clientManager.AsClient(Context.ConnectionId, out Client client))
+            {
+                var board = _boardManager.GetBoard(client.Group);
+                if (board != null)
+                {
+                    var boardEvent = new BoardEvent
+                    {
+                        By = client.Id,
+                        Action = action
+                    };
+                    board.Events.Add(boardEvent);
+                    await Clients.Group(client.Group).PerformBoardAction(boardEvent);
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Failed to add board action");
+        }
     }
 
     public void BoardSaved()
@@ -158,39 +167,13 @@ public class BoardHub : Hub<IBoardClient>
                 var board = _boardManager.GetBoard(client.Group);
                 if (board != null)
                 {
-                    board.Actions.Clear();
+                    board.Events.Clear();
                 }
             }
         }
         catch (Exception e)
         {
             _logger.LogError(e, "Failed to clear board actions");
-        }
-    }
-
-    private async Task AddBoardAction(BoardAction.ActionType type, object data)
-    {
-        try
-        {
-            if (_clientManager.AsClient(Context.ConnectionId, out Client client))
-            {
-                var board = _boardManager.GetBoard(client.Group);
-                if (board != null)
-                {
-                    var action = new BoardAction
-                    {
-                        By = client.Id,
-                        Type = type,
-                        Data = data
-                    };
-                    board.Actions.Add(action);
-                    await Clients.Group(client.Group).BoardPerformAction(action);
-                }
-            }
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "Failed to add action");
         }
     }
 }

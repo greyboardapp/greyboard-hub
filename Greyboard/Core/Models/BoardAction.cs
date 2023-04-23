@@ -8,7 +8,9 @@ public class BoardAction
         Add,
         Remove,
         Move,
-        Scale
+        Scale,
+        Order,
+        LockState,
     }
 
     public string By { get; set; } = "";

@@ -6,5 +6,5 @@ public class Board
     public string Name { get; set; } = "";
     public string Slug { get; set; } = "";
 
-    public List<BoardAction> Actions { get; set; } = new();
+    public List<BoardEvent> Events { get; set; } = new();
 }

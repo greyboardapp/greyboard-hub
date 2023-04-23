@@ -7,10 +7,10 @@ namespace Greyboard.Hubs.Clients;
 public interface IBoardClient
 {
     Task Joined();
-    Task ConnectionReady(IEnumerable<Client> clients, IEnumerable<BoardAction> actions);
+    Task ConnectionReady(IEnumerable<Client> clients, IEnumerable<BoardEvent> actions);
     Task ClientConnected(Client client);
     Task ClientDisconnected(Client client);
     Task ClientAfkUpdated(Client client);
-    Task BoardPerformAction(BoardAction action);
+    Task PerformBoardAction(BoardEvent action);
     Task HeartBeat(Dictionary<string, float[]> pointers);
 }
