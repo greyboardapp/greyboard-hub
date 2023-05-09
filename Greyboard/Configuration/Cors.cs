@@ -4,13 +4,12 @@ namespace Greyboard.Configuration;
 
 public static class CorsConfiguration
 {
-    private static string CORS_NAME = "ClientPermission";
 
-    public static IServiceCollection AddCorsConfiguration(this IServiceCollection services)
+    public static IServiceCollection AddCorsConfiguration(this IServiceCollection services, string name)
     {
         services.AddCors(options =>
         {
-            options.AddPolicy(CORS_NAME, policy =>
+            options.AddPolicy(name, policy =>
             {
                 policy.AllowAnyHeader()
                     .AllowAnyMethod()

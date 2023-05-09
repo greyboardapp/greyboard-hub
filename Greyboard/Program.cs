@@ -24,7 +24,7 @@ builder.Services.AddHostedService<HeartBeatService>();
 builder.Services.AddHttpClient();
 builder.Services.AddSignalR();
 
-builder.Services.AddCorsConfiguration();
+builder.Services.AddCorsConfiguration(CORS_NAME);
 
 var app = builder.Build();
 

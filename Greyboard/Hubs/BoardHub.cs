@@ -40,9 +40,20 @@ public class BoardHub : Hub<IBoardClient>
 
                     _clientManager.RemoveClient(Context.ConnectionId);
 
-                    if (!_clientManager.GetClientsFromBoard(client.Group).Any())
+                    var clients = _clientManager.GetClientsFromBoard(client.Group);
+                    if (!clients.Any())
                     {
                         _boardManager.RemoveBoard(client.Group);
+                    }
+                    else
+                    {
+                        if (board.Host == Context.ConnectionId)
+                        {
+                            Clients.Client(board.Host).UserAllowedToSave(false);
+                            var clientToBeHost = clients.First();
+                            board.Host = clientToBeHost.ConnectionId;
+                            Clients.Client(board.Host).UserAllowedToSave(true);
+                        }
                     }
                 }
             }
@@ -70,7 +81,18 @@ public class BoardHub : Hub<IBoardClient>
                     throw new Exception("Board not valid");
                 }
 
+                board.Host = Context.ConnectionId;
                 _boardManager.AddBoard(board);
+                await Clients.Client(board.Host).UserAllowedToSave(true);
+            }
+            else
+            {
+                if (board.Author == user.Id)
+                {
+                    await Clients.Client(board.Host).UserAllowedToSave(false);
+                    board.Host = Context.ConnectionId;
+                    await Clients.Client(board.Host).UserAllowedToSave(true);
+                }
             }
 
             var client = new Client
@@ -96,7 +118,7 @@ public class BoardHub : Hub<IBoardClient>
             await Groups.AddToGroupAsync(Context.ConnectionId, slug);
             _clientManager.AddClient(Context.ConnectionId, client);
 
-            await Clients.Client(Context.ConnectionId).ConnectionReady(_clientManager.GetClientsFromBoard(slug), board.Events);
+            await Clients.Client(Context.ConnectionId).ConnectionReady(_clientManager.GetClientsFromBoard(slug), board.Events, board.Age);
 
             await Clients.GroupExcept(slug, Context.ConnectionId).ClientConnected(client);
 
@@ -188,7 +210,7 @@ public class BoardHub : Hub<IBoardClient>
         }
     }
 
-    public void BoardSaved()
+    public async Task BoardSaved()
     {
         try
         {
@@ -198,6 +220,8 @@ public class BoardHub : Hub<IBoardClient>
                 if (board != null)
                 {
                     board.Events.Clear();
+                    board.Age++;
+                    await Clients.Group(board.Slug).BoardAged(board.Age);
                 }
             }
         }
