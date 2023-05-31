@@ -45,7 +45,7 @@ jobs:
         env:
           REGION: us
           FLY_REGION: dfw
-          CLIENT_URL: ${{ vars.CLIENT_URL }}
+          CLIENT_URL: ${{ vars.CLIENT_URLS }}
 
       - name: Deploy to US
         run: flyctl deploy -a greyboard-hub-us --local-only
