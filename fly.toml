@@ -7,7 +7,7 @@ processes = []
 [build]
 
 [env]
-  CLIENT_URL = "#{CLIENT_URL}#"
+  CLIENT_URLS = "#{CLIENT_URLS}#"
 
 [experimental]
   auto_rollback = true

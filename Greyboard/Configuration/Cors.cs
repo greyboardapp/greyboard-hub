@@ -7,13 +7,15 @@ public static class CorsConfiguration
 
     public static IServiceCollection AddCorsConfiguration(this IServiceCollection services, string name)
     {
+        var clientUrl = services.BuildServiceProvider().GetService<AppSettings>()?.CLIENT_URLS.Split(";") ?? new[] { "http://localhost:3000" };
+
         services.AddCors(options =>
         {
             options.AddPolicy(name, policy =>
             {
                 policy.AllowAnyHeader()
                     .AllowAnyMethod()
-                    .WithOrigins(services.BuildServiceProvider().GetService<AppSettings>()?.CLIENT_URL ?? "http://localhost:3000")
+                    .WithOrigins(clientUrl)
                     .AllowCredentials();
             });
         });

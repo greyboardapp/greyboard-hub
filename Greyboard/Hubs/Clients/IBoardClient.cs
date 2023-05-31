@@ -8,6 +8,7 @@ public interface IBoardClient
 {
     Task Joined();
     Task BoardClosed();
+    Task BoardAccessesModified(IEnumerable<BoardAccess> accesses);
     Task ReassignUserToClient();
     Task UserAllowedToSave(bool state);
     Task ConnectionReady(IEnumerable<Client> clients, IEnumerable<BoardEvent> actions, int age);

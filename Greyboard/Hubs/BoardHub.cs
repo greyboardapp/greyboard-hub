@@ -11,12 +11,14 @@ namespace Greyboard.Hubs;
 public class BoardHub : Hub<IBoardClient>
 {
     private readonly ILogger<BoardHub> _logger;
+    private readonly AppSettings _appSettings;
     private readonly IClientManager _clientManager;
     private readonly IBoardManager _boardManager;
 
-    public BoardHub(ILogger<BoardHub> logger, IClientManager clientManager, IBoardManager boardManager)
+    public BoardHub(ILogger<BoardHub> logger, AppSettings appSettings, IClientManager clientManager, IBoardManager boardManager)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+        _appSettings = appSettings ?? throw new ArgumentNullException(nameof(appSettings));
         _clientManager = clientManager ?? throw new ArgumentNullException(nameof(clientManager));
         _boardManager = boardManager ?? throw new ArgumentNullException(nameof(boardManager));
     }
@@ -49,10 +51,7 @@ public class BoardHub : Hub<IBoardClient>
                     {
                         if (board.Host == Context.ConnectionId)
                         {
-                            Clients.Client(board.Host).UserAllowedToSave(false);
-                            var clientToBeHost = clients.First();
-                            board.Host = clientToBeHost.ConnectionId;
-                            Clients.Client(board.Host).UserAllowedToSave(true);
+                            FindNewBoardHost(board, clients);
                         }
                     }
                 }
@@ -74,8 +73,9 @@ public class BoardHub : Hub<IBoardClient>
 
             if (board == null)
             {
-                var token = Context.Features.Get<IHttpContextFeature>()?.HttpContext?.Request.Cookies["jwtToken"];
-                board = await _boardManager.GetRemoteBoardData(slug, token);
+                var origin = Context.GetHttpContext()?.Request.Headers.Origin.ToString() ?? _appSettings.CLIENT_URLS.Split(";").FirstOrDefault("http://localhost:3000");
+                var token = Context.GetHttpContext()?.Request.Cookies["jwtToken"];
+                board = await _boardManager.GetRemoteBoardData(origin, slug, token);
                 if (board == null)
                 {
                     throw new Exception("Board not valid");
@@ -87,9 +87,12 @@ public class BoardHub : Hub<IBoardClient>
             }
             else
             {
-                if (board.Author == user.Id)
+                if (board.Author?.Id == user.Id || (string.IsNullOrEmpty(board.Host) && board.Accesses.Any(access => access.User?.Id == user.Id && access.Type >= BoardAccess.AccessType.Editor)))
                 {
-                    await Clients.Client(board.Host).UserAllowedToSave(false);
+                    if (!string.IsNullOrEmpty(board.Host))
+                    {
+                        await Clients.Client(board.Host).UserAllowedToSave(false);
+                    }
                     board.Host = Context.ConnectionId;
                     await Clients.Client(board.Host).UserAllowedToSave(true);
                 }
@@ -173,19 +176,51 @@ public class BoardHub : Hub<IBoardClient>
                 var board = _boardManager.GetBoard(client.Group);
                 if (board != null)
                 {
-                    var boardEvent = new BoardEvent
+                    if (board.Author?.Id == client.Id || board.Accesses.Any(access => access.User?.Id == client.Id && access.Type >= BoardAccess.AccessType.Editor))
                     {
-                        By = client.Id,
-                        Action = action
-                    };
-                    board.Events.Add(boardEvent);
-                    await Clients.Group(client.Group).PerformBoardAction(boardEvent);
+                        var boardEvent = new BoardEvent
+                        {
+                            By = client.Id,
+                            Action = action
+                        };
+                        board.Events.Add(boardEvent);
+                        await Clients.Group(client.Group).PerformBoardAction(boardEvent);
+                    }
                 }
             }
         }
         catch (Exception e)
         {
             _logger.LogError(e, "Failed to add board action");
+        }
+    }
+
+    public async void AccessesModified(IEnumerable<BoardAccess> accesses)
+    {
+        try
+        {
+            if (_clientManager.AsClient(Context.ConnectionId, out Client client))
+            {
+                var board = _boardManager.GetBoard(client.Group);
+                if (board != null)
+                {
+                    _logger.LogInformation($"Board accesses modified ({board.Slug})");
+                    board.Accesses = accesses.ToList();
+                    await Clients.GroupExcept(board.Slug, Context.ConnectionId).BoardAccessesModified(accesses);
+
+                    if (_clientManager.AsClient(board.Host, out Client hostClient))
+                    {
+                        if (board.Accesses.Any(access => access.User?.Id == hostClient.Id && access.Type == BoardAccess.AccessType.Viewer))
+                        {
+                            FindNewBoardHost(board, _clientManager.GetClientsFromBoard(board.Slug));
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception e)
+        {
+            _logger.LogError(e, "Failed to notify board access modification");
         }
     }
 
@@ -248,6 +283,21 @@ public class BoardHub : Hub<IBoardClient>
         catch (Exception e)
         {
             _logger.LogError(e, "Failed to clear board actions");
+        }
+    }
+
+    private void FindNewBoardHost(Board board, IEnumerable<Client> clients)
+    {
+        Clients.Client(board.Host).UserAllowedToSave(false);
+        try
+        {
+            var clientToBeHost = clients.First((client) => board.Accesses.Any(access => access.User?.Id == client.Id && access.Type >= BoardAccess.AccessType.Editor));
+            board.Host = clientToBeHost.ConnectionId;
+            Clients.Client(board.Host).UserAllowedToSave(true);
+        }
+        catch (InvalidOperationException)
+        {
+            board.Host = "";
         }
     }
 }

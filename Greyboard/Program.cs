@@ -10,10 +10,7 @@ var CORS_NAME = "ClientPermission";
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Logging.ClearProviders();
-builder.Logging.AddConsole(options =>
-{
-
-});
+builder.Logging.AddConsole(options => { });
 
 builder.Services.AddSingleton<AppSettings>();
 builder.Services.AddSingleton<IClientManager, ClientManager>();

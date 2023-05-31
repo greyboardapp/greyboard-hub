@@ -8,14 +8,12 @@ public class BoardManager : IBoardManager
 {
     private readonly ILogger<BoardManager> _logger;
 
-    private readonly AppSettings _appSettings;
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly Dictionary<string, Board> _boards = new();
 
-    public BoardManager(ILogger<BoardManager> logger, AppSettings appSettings, IHttpClientFactory httpClientFactory)
+    public BoardManager(ILogger<BoardManager> logger, IHttpClientFactory httpClientFactory)
     {
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
-        _appSettings = appSettings ?? throw new ArgumentNullException(nameof(appSettings));
         _httpClientFactory = httpClientFactory ?? throw new ArgumentNullException(nameof(httpClientFactory));
     }
 
@@ -49,7 +47,7 @@ public class BoardManager : IBoardManager
         return null;
     }
 
-    public async Task<Board> GetRemoteBoardData(string slug, string? token)
+    public async Task<Board> GetRemoteBoardData(string origin, string slug, string? token)
     {
         try
         {
@@ -59,7 +57,7 @@ public class BoardManager : IBoardManager
                 client.DefaultRequestHeaders.Add("Cookie", $"jwtToken={token}");
             }
 
-            var url = $"{_appSettings.CLIENT_URL}/api/boards/slug/{slug}";
+            var url = $"{origin}/api/boards/slug/{slug}";
 
             _logger.LogInformation($"Requesting board data from {url}");
 

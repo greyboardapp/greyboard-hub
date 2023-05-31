@@ -8,5 +8,5 @@ public interface IBoardManager
     void RemoveBoard(string slug);
     IEnumerable<Board> GetBoards();
     Board? GetBoard(string slug);
-    Task<Board> GetRemoteBoardData(string slug, string? token);
+    Task<Board> GetRemoteBoardData(string origin, string slug, string? token);
 }
