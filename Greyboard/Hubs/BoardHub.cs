@@ -73,8 +73,9 @@ public class BoardHub : Hub<IBoardClient>
 
             if (board == null)
             {
-                var origin = Context.GetHttpContext()?.Request.Headers.Origin.ToString() ?? _appSettings.CLIENT_URLS.Split(";").FirstOrDefault("http://localhost:3000");
-                var token = Context.GetHttpContext()?.Request.Cookies["jwtToken"];
+                var httpContext = Context.Features.Get<IHttpContextFeature>()?.HttpContext;
+                var origin = httpContext?.Request.Headers.Origin.ToString() ?? _appSettings.CLIENT_URLS.Split(";").FirstOrDefault("http://localhost:3000");
+                var token = httpContext?.Request.Cookies["jwtToken"];
                 board = await _boardManager.GetRemoteBoardData(origin, slug, token);
                 if (board == null)
                 {
