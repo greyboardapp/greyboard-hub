@@ -28,7 +28,7 @@ jobs:
         env:
           REGION: eu
           FLY_REGION: otp
-          CLIENT_URL: ${{ vars.CLIENT_URL }}
+          CLIENT_URLS: ${{ vars.CLIENT_URLS }}
 
       - name: Deploy to EU
         run: flyctl deploy -a greyboard-hub-eu --local-only
