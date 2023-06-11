@@ -177,7 +177,7 @@ public class BoardHub : Hub<IBoardClient>
                 var board = _boardManager.GetBoard(client.Group);
                 if (board != null)
                 {
-                    if (board.Author?.Id == client.Id || board.Accesses.Any(access => access.User?.Id == client.Id && access.Type >= BoardAccess.AccessType.Editor))
+                    if (board.isPublic || board.Author?.Id == client.Id || board.Accesses.Any(access => access.User?.Id == client.Id && access.Type >= BoardAccess.AccessType.Editor))
                     {
                         var boardEvent = new BoardEvent
                         {

@@ -1,6 +1,7 @@
 using Greyboard.Core;
 using Greyboard.Core.Managers;
 using Greyboard.Core.Models;
+using Newtonsoft.Json;
 
 namespace Greyboard.Managers;
 
@@ -64,7 +65,7 @@ public class BoardManager : IBoardManager
             var response = await client.GetAsync(url);
             response.EnsureSuccessStatusCode();
 
-            var data = await response.Content.ReadFromJsonAsync<ApiResponse<Board>>();
+            var data = JsonConvert.DeserializeObject<ApiResponse<Board>>(await response.Content.ReadAsStringAsync());
             if (data == null || data.Status != 200 || data.Result == null)
             {
                 throw new HttpRequestException(data?.Error ?? "unknown");

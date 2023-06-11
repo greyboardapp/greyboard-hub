@@ -11,6 +11,10 @@ public class BoardAction
         Scale,
         Order,
         LockState,
+        Label,
+        Color,
+        Weight,
+        Text,
     }
 
     public string By { get; set; } = "";

@@ -4,7 +4,6 @@ namespace Greyboard.Configuration;
 
 public static class CorsConfiguration
 {
-
     public static IServiceCollection AddCorsConfiguration(this IServiceCollection services, string name)
     {
         var clientUrl = services.BuildServiceProvider().GetService<AppSettings>()?.CLIENT_URLS.Split(";") ?? new[] { "http://localhost:3000" };
